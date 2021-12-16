@@ -22,7 +22,7 @@ import inspect
 import os
 import pkgutil
 import importlib
-from c8ydm.framework.modulebase import Sensor, Listener, Initializer
+from c8ydm.framework.modulebase import Sensor, Listener, Initializer, Driver
 import c8ydm.agentmodules as agentmodules
 
 def findAgentModules():
@@ -31,7 +31,8 @@ def findAgentModules():
     modules = {
         'sensors': [],
         'listeners': [],
-        'initializers': []
+        'initializers': [],
+        'drivers': []
     }
     for name in pkgutil.iter_modules([pkgpath]):
         logging.debug(name)
@@ -48,4 +49,7 @@ def findAgentModules():
                 if issubclass(obj, Initializer):
                     logging.debug('Import initializer: ' + name)
                     modules['initializers'].append(obj)
+                if issubclass(obj, Driver):
+                    logging.debug('Import drivers: ' + name)
+                    modules['drivers'].append(obj)
     return modules

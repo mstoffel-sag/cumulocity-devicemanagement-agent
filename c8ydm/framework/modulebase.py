@@ -68,3 +68,18 @@ class Initializer:
   '''
   @abstractmethod
   def getMessages(self): pass
+
+class Driver:
+  __metaclass__ = ABCMeta
+
+  def __init__(self, serial, agent):
+    self.serial = serial
+    self.agent = agent
+  '''
+  Returns a list of SmartREST messages. Will be called at the start of the agent
+  '''
+  @abstractmethod
+  def start(self): pass
+
+  @abstractmethod
+  def stop(self): pass

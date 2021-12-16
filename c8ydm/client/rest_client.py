@@ -157,6 +157,39 @@ class RestClient():
         except Exception as ex:
             self.logger.error('The following error occured: %s' % (str(ex)))
             return None
+  
+    def create_event(self, mo_id,type,text, content ):
+        try:
+            url = f'{self.base_url}/event/events'
+            headers = self.get_auth_header()
+            headers['Content-Type'] = 'application/json'
+            headers['Accept'] = 'application/json'
+            payload = {
+                "time" : datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "type" : type,
+                "text" : text,
+                "source": { "id" : mo_id},
+                type : content
+            }
+            self.logger.debug(f'Sending Request to url {url}')
+            response = requests.request(
+                "POST", url, headers=headers, data=json.dumps(payload))
+            self.logger.debug(
+                'Response from request: ' + str(response.text))
+            self.logger.debug(
+                'Response from request with code : ' + str(response.status_code))
+            if response.status_code == 200 or response.status_code == 201:
+                json_data = json.loads(response.text)
+                event_id = json_data["id"]
+                # print(binaryurl)
+                # return binaryurl
+                return event_id
+            else:
+                self.logger.warning('Creating LogFileEvent failed!')
+                return None
+        except Exception as ex:
+            self.logger.error('The following error occured: %s' % (str(ex)))
+            return None
 
     def upload_event_logfile(self, mo_id, payload, file):
         #self.logger.info('Update of managed Object')

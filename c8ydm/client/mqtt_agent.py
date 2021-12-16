@@ -86,6 +86,8 @@ class Agent():
                                     message.topic, message.getMessage())
                     self.publishMessage(message)
 
+
+
     def run(self):
         try:
             self.logger.info('Starting agent')
@@ -163,13 +165,15 @@ class Agent():
         if self.cert_auth:
             self.logger.info("Stopping refresh token thread")
             self.stop_event.set()
-        
 
     def stop(self):
         msg = SmartRESTMessage('s/us', '400', ['c8y_AgentStopEvent', 'C8Y DM Agent stopped'])
         self.publishMessage(msg, qos=0, wait_for_publish=True)
         self.disconnect(self.__client)
         self.stopmarker = 1
+        modules = moduleloader.findAgentModules()
+        for driver in modules['drivers']:
+            driver.stop()
 
     def pollPendingOperations(self):
         while not self.stopmarker:
@@ -185,6 +189,7 @@ class Agent():
     def __init_agent(self):
         self.__listeners = []
         self.__sensors = []
+        self.__drivers = []
         # set Device Name
         msg = SmartRESTMessage('s/us', '100', [self.device_name, self.device_type])
         self.publishMessage(msg, 2, wait_for_publish=True)
@@ -235,7 +240,17 @@ class Agent():
             init_thread.name = f'InitializerThread-{currentInitializer.__class__.__name__}'
             init_thread.start()
             #_thread.start_new_thread(self.handle_initializer_message, (currentInitializer,))
-
+        for driver in modules['drivers']:
+            if driver.__name__ in classCache:
+                currentDriver = classCache[driver.__name__]
+            else:
+                currentDriver = driver(self.serial, self)
+                classCache[driver.__name__] = currentDriver
+            driver_thread = threading.Thread(target=currentDriver.start)
+            driver_thread.daemon = True
+            driver_thread.name = f'DriverThread-{currentDriver.__class__.__name__}'
+            driver_thread.start()
+            
         classCache = None
 
         # set supported operations
