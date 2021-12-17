@@ -158,7 +158,7 @@ class RestClient():
             self.logger.error('The following error occured: %s' % (str(ex)))
             return None
   
-    def create_event(self, mo_id,type,text, content ):
+    def create_event(self, mo_id,type,text, content , file):
         try:
             url = f'{self.base_url}/event/events'
             headers = self.get_auth_header()
@@ -169,11 +169,11 @@ class RestClient():
                 "type" : type,
                 "text" : text,
                 "source": { "id" : mo_id},
-                type : content
+                type : json.loads(content)
             }
             self.logger.debug(f'Sending Request to url {url}')
             response = requests.request(
-                "POST", url, headers=headers, data=json.dumps(payload))
+                "POST", url, headers=headers, data=json.dumps(payload), files=file)
             self.logger.debug(
                 'Response from request: ' + str(response.text))
             self.logger.debug(
