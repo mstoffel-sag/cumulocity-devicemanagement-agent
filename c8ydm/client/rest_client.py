@@ -191,6 +191,49 @@ class RestClient():
             self.logger.error('The following error occured: %s' % (str(ex)))
             return None
 
+    def create_alarm(self, mo_id,type,text, severity,  status, content,action  ):
+        try:
+
+            url = f'{self.base_url}/alarm/alarms'
+            headers = self.get_auth_header()
+            headers['Content-Type'] = 'application/json'
+            headers['Accept'] = 'application/json'
+            type_payload = ''
+            try:
+                type_payload : json.loads(content)
+            except:
+                self.logger.warning('Create alarm parsing additional payload failed')
+                
+            payload = {
+                "time" : datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "type" : type,
+                "text" : text,
+                "severity" : severity,
+                "status" : status,
+                type: type_payload,
+                "source": { "id" : mo_id}
+                
+            }
+            self.logger.debug(f'Sending Request to url {url}')
+            response = requests.request(
+                action, url, headers=headers, data=json.dumps(payload))
+            self.logger.debug(
+                'Response from request: ' + str(response.text))
+            self.logger.debug(
+                'Response from request with code : ' + str(response.status_code))
+            if response.status_code == 200 or response.status_code == 201:
+                json_data = json.loads(response.text)
+                event_id = json_data["id"]
+                # print(binaryurl)
+                # return binaryurl
+                return event_id
+            else:
+                self.logger.warning('Creating Alarm failed!')
+                return None
+        except Exception as ex:
+            self.logger.error('The following error occured: %s' % (str(ex)))
+            return None
+
     def upload_event_logfile(self, mo_id, payload, file):
         #self.logger.info('Update of managed Object')
         try:
@@ -324,3 +367,65 @@ class RestClient():
         except Exception as e:
             self.logger.error('The following error occured while trying to check for existing SmartRest templates: %s' % (str(e)))
             return False
+
+    def create_child_device(self, parent_mo_id,external_id,name,type   ):
+
+        try:
+            child_id = None
+            url = f'{self.base_url}/inventory/managedObjects'
+            headers = self.get_auth_header()
+            headers['Content-Type'] = 'application/json'
+            headers['Accept'] = 'application/json'
+                
+            payload = {
+                "time" : datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "c8y_IsDevice": {},
+                "type": type,
+                "name": name
+            }
+
+            self.logger.info(f'Sending Request to url {url}')
+            response = requests.request(
+                'POST', url, headers=headers, data=json.dumps(payload))
+            self.logger.debug(
+                'Response from request: ' + str(response.text))
+            self.logger.debug(
+                'Response from request with code : ' + str(response.status_code))
+
+            if response.status_code == 200 or response.status_code == 201:
+                json_data = json.loads(response.text)
+                child_id = json_data["id"]
+                payload_external_id = {
+                        "externalId": external_id,
+                        "type": "c8y_Serial"
+                    }
+                url = f'{self.base_url}/identity/globalIds/{child_id}/externalIds'
+                self.logger.info(f'Sending Request to url {url}')
+                response = requests.request(
+                    'POST', url, headers=headers, data=json.dumps(payload_external_id))
+                self.logger.info(
+                    'Response from request with code : ' + str(response.status_code))
+                    
+                if response.status_code == 200 or response.status_code == 201:
+                    payload_child = {
+                        "managedObject": {
+                        "id": child_id
+                        }
+                    }
+                    url = f'{self.base_url}/inventory/managedObjects/{parent_mo_id}/childDevices'
+                    self.logger.info(f'Sending Request to url {url}')
+                    response = requests.request(
+                        'POST', url, headers=headers, data=json.dumps(payload_child))
+                    self.logger.info(
+                        'Response from request with code : ' + str(response.status_code))
+                    return child_id
+                else:
+                    self.logger.error('Creating Child Device failed!')
+                    return None
+            else:
+                self.logger.error('Creating Child Device failed!')
+                return None
+        except Exception as ex:
+            self.logger.error('Creating Child The following error occured: %s' % (str(ex)))
+            return None
+        

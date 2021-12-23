@@ -24,6 +24,9 @@ then
     INTERACTIVITY_ARG='-it'
 fi
 # load variables starting with "C8YDM"
-docker run --env-file <(env | grep C8YDM) \
+docker run -p 8080:8080 --env-file <(env | grep C8YDM) \
            --rm $INTERACTIVITY_ARG \
-           -v /var/run/docker.sock:/var/run/docker.sock $DOCKER_IMAGE_NAME
+           -v ~/.cumulocity:/root/.cumulocity \
+           -v /var/run/docker.sock:/var/run/docker.sock \
+           $DOCKER_IMAGE_NAME 
+           
